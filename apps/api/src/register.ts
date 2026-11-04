@@ -1,8 +1,9 @@
-
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
+import { randomBytes, createHash } from 'node:crypto'
 import { prisma } from './database.js'
+import { sendVerificationEmail } from './email.js'
 
 const registrationSchema = z.object({
   email: z.string().trim().email().max(254),
@@ -98,10 +99,50 @@ export async function registerRoutes(app: FastifyInstance) {
         },
       })
 
+      let emailSent = false
+
+      try {
+        const verificationToken = randomBytes(32).toString('hex')
+
+        const tokenHash = createHash('sha256')
+          .update(verificationToken)
+          .digest('hex')
+
+        await prisma.emailVerificationToken.create({
+          data: {
+            userId: user.id,
+            tokenHash,
+            expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+          },
+        })
+
+        await sendVerificationEmail(email, verificationToken)
+
+        emailSent = true
+      } catch (emailError) {
+        request.log.error(emailError, 'ZELVI verification email failed')
+
+        // Invalidate any token created for the failed email attempt.
+        await prisma.emailVerificationToken.updateMany({
+          where: {
+            userId: user.id,
+            usedAt: null,
+          },
+          data: {
+            usedAt: new Date(),
+          },
+        }).catch(error => {
+          request.log.error(error, 'Could not invalidate verification token')
+        })
+      }
+
       return reply.code(201).send({
-        message: 'Your ZELVI account has been created. Please verify your email.',
+        message: emailSent
+          ? 'Your ZELVI account has been created. Please check your email to verify your account.'
+          : 'Your account has been created, but the verification email could not be sent. Please request another verification email.',
         user,
         welcomeCredits: 20,
+        emailSent,
       })
     } catch (error: unknown) {
       if (

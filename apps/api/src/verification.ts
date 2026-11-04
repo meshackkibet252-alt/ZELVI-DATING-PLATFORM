@@ -1,8 +1,8 @@
-
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { randomBytes, createHash } from 'node:crypto'
 import { prisma } from './database.js'
+import { sendVerificationEmail } from './email.js'
 
 const requestSchema = z.object({
   email: z.string().trim().email().max(254),
@@ -17,7 +17,7 @@ function hashToken(token: string): string {
 }
 
 export async function registerVerificationRoutes(app: FastifyInstance) {
-  // REQUEST A VERIFICATION LINK
+  // REQUEST A NEW VERIFICATION EMAIL
   app.post('/api/auth/verification/request', async (request, reply) => {
     const validation = requestSchema.safeParse(request.body)
 
@@ -38,7 +38,7 @@ export async function registerVerificationRoutes(app: FastifyInstance) {
         },
       })
 
-      // Avoid revealing whether an email is registered.
+      // Do not reveal whether an email is registered.
       if (!user || user.status !== 'PENDING_EMAIL') {
         return reply.send({
           message: 'If the account requires verification, instructions will be sent.',
@@ -47,7 +47,7 @@ export async function registerVerificationRoutes(app: FastifyInstance) {
 
       const token = randomBytes(32).toString('hex')
       const tokenHash = hashToken(token)
-      const expiresAt = new Date(Date.now() + 30 * 60 * 1000)
+      const now = new Date()
 
       await prisma.$transaction([
         prisma.emailVerificationToken.updateMany({
@@ -56,7 +56,7 @@ export async function registerVerificationRoutes(app: FastifyInstance) {
             usedAt: null,
           },
           data: {
-            usedAt: new Date(),
+            usedAt: now,
           },
         }),
 
@@ -64,30 +64,40 @@ export async function registerVerificationRoutes(app: FastifyInstance) {
           data: {
             userId: user.id,
             tokenHash,
-            expiresAt,
+            expiresAt: new Date(Date.now() + 30 * 60 * 1000),
           },
         }),
       ])
 
-      const response: {
-        message: string
-        verificationUrl?: string
-      } = {
-        message: 'Verification instructions have been prepared.',
+      try {
+        await sendVerificationEmail(validation.data.email.toLowerCase(), token)
+      } catch (emailError) {
+        request.log.error(emailError, 'ZELVI verification email failed')
+
+        await prisma.emailVerificationToken.updateMany({
+          where: {
+            userId: user.id,
+            tokenHash,
+            usedAt: null,
+          },
+          data: {
+            usedAt: new Date(),
+          },
+        })
+
+        return reply.code(503).send({
+          error: 'Unable to send the verification email. Please try again later.',
+        })
       }
 
-      // Local development only. Never expose tokens in production.
-      if (process.env.NODE_ENV === 'development') {
-        response.verificationUrl =
-          `http://localhost:5173/verify-email?token=${token}`
-      }
-
-      return reply.send(response)
+      return reply.send({
+        message: 'Verification instructions have been sent if the account requires verification.',
+      })
     } catch (error) {
       request.log.error(error)
 
       return reply.code(500).send({
-        error: 'Unable to prepare verification instructions.',
+        error: 'Unable to process your verification request.',
       })
     }
   })
