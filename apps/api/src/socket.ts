@@ -12,7 +12,10 @@ export function getSocketServer(): Server | null {
 export function configureSocket(app: FastifyInstance) {
   const io = new Server(app.server, {
     cors: {
-      origin: ['http://localhost:5173'],
+      origin: [
+        'http://localhost:5173',
+        'https://zelvi-dating-platform.vercel.app',
+      ],
       methods: ['GET', 'POST'],
       credentials: true,
     },
