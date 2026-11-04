@@ -1,0 +1,326 @@
+
+.profile-setup {
+  width: 100%;
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 36px 24px 60px;
+  color: #35232b;
+}
+
+.profile-setup-header {
+  margin-bottom: 30px;
+}
+
+.profile-setup-header .eyebrow {
+  color: #e94f82;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.profile-setup-header h1 {
+  margin: 12px 0;
+  color: #7a0f3d;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(30px, 5vw, 43px);
+}
+
+.profile-setup-header p,
+.profile-panel-description {
+  color: #806d76;
+  line-height: 1.7;
+}
+
+.profile-step-indicator {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 30px 0;
+}
+
+.profile-step-indicator button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid #f0dce4;
+  border-radius: 12px;
+  background: #fff;
+  color: #806d76;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.profile-step-indicator button span {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #f7eaf0;
+  color: #7a0f3d;
+  font-weight: 700;
+}
+
+.profile-step-indicator button.active {
+  border-color: #7a0f3d;
+  background: #fff7fa;
+  color: #7a0f3d;
+  font-weight: 700;
+}
+
+.profile-step-indicator button.completed span {
+  background: #7a0f3d;
+  color: white;
+}
+
+.profile-setup-form {
+  width: 100%;
+}
+
+.profile-setup-panel {
+  padding: 30px;
+  border: 1px solid #f0e1e6;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 12px 40px rgba(74, 20, 43, 0.06);
+}
+
+.profile-setup-panel h2 {
+  margin: 0;
+  color: #7a0f3d;
+  font-size: 23px;
+}
+
+.profile-panel-description {
+  margin: 8px 0 25px;
+  font-size: 14px;
+}
+
+.profile-setup-panel > label:not(.profile-checkbox) {
+  display: block;
+  margin: 20px 0 8px;
+  color: #49333d;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.profile-setup-panel input:not([type="checkbox"]),
+.profile-setup-panel textarea,
+.profile-setup-panel select {
+  display: block;
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 14px;
+  border: 1px solid #ead9e0;
+  border-radius: 10px;
+  outline: none;
+  background: #fffdfd;
+  color: #35232b;
+  font: inherit;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.profile-setup-panel input:focus,
+.profile-setup-panel textarea:focus,
+.profile-setup-panel select:focus {
+  border-color: #e94f82;
+  box-shadow: 0 0 0 3px rgba(233, 79, 130, 0.1);
+}
+
+.profile-setup-panel textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.profile-setup-panel small {
+  display: block;
+  margin-top: 7px;
+  color: #927f87;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.profile-character-count {
+  text-align: right;
+}
+
+.profile-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0;
+  color: #594650;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.profile-checkbox input {
+  width: 17px;
+  height: 17px;
+  accent-color: #7a0f3d;
+}
+
+.intent-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.intent-options button {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 115px;
+  padding: 17px;
+  border: 1px solid #efdee5;
+  border-radius: 13px;
+  background: #fff;
+  color: #49333d;
+  text-align: left;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.intent-options button strong {
+  color: #7a0f3d;
+  font-size: 14px;
+}
+
+.intent-options button small {
+  margin: 0;
+}
+
+.intent-options button.selected {
+  border-color: #e94f82;
+  background: #fff5f8;
+  box-shadow: 0 0 0 2px rgba(233, 79, 130, 0.08);
+}
+
+.profile-age-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.profile-age-row label {
+  display: block;
+  margin: 20px 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.profile-gender-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px 15px;
+  margin-top: 10px;
+}
+
+.profile-gender-options .profile-checkbox {
+  margin: 8px 0;
+}
+
+.profile-step-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.profile-next,
+.profile-previous {
+  min-height: 45px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.profile-next {
+  margin-left: auto;
+  background: #7a0f3d;
+  color: #fff;
+}
+
+.profile-next:hover {
+  background: #5e0b2e;
+}
+
+.profile-previous {
+  border: 1px solid #ead9e0;
+  background: #fff;
+  color: #7a0f3d;
+}
+
+.profile-next:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.profile-form-error,
+.profile-form-success {
+  margin-top: 20px;
+  padding: 13px 15px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.profile-form-error {
+  background: #fff0ef;
+  color: #a52c2c;
+}
+
+.profile-form-success {
+  background: #edf9f0;
+  color: #23753b;
+}
+
+.profile-setup-loading {
+  padding: 70px 20px;
+  color: #7a0f3d;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .profile-setup {
+    padding: 25px 15px 45px;
+  }
+
+  .profile-setup-panel {
+    padding: 21px 17px;
+  }
+
+  .profile-step-indicator {
+    gap: 6px;
+  }
+
+  .profile-step-indicator button {
+    flex-direction: column;
+    gap: 5px;
+    padding: 9px 3px;
+    font-size: 11px;
+  }
+
+  .intent-options {
+    grid-template-columns: 1fr;
+  }
+
+  .intent-options button {
+    min-height: auto;
+  }
+
+  .profile-age-row {
+    gap: 10px;
+  }
+
+  .profile-step-actions button {
+    padding: 0 15px;
+  }
+}

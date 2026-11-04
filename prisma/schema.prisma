@@ -1,0 +1,358 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserStatus {
+  PENDING_EMAIL
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum CreditTransactionType {
+  WELCOME_GRANT
+  PURCHASE
+  MESSAGE_SENT
+  REFUND
+  ADMIN_ADJUSTMENT
+}
+
+enum GenderIdentity {
+  MALE
+  FEMALE
+  NON_BINARY
+  PREFER_NOT_TO_SAY
+}
+
+enum RelationshipIntent {
+  FRIENDSHIP
+  DATING
+  BOTH
+}
+
+enum LikeIntent {
+  FRIENDSHIP
+  DATING
+}
+
+enum PhotoVisibility {
+  PUBLIC
+  MATCHES_ONLY
+  PRIVATE
+}
+
+enum ReportReason {
+  HARASSMENT
+  FAKE_PROFILE
+  SCAM_OR_FRAUD
+  INAPPROPRIATE_CONTENT
+  UNDERAGE_USER
+  SPAM
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWING
+  RESOLVED
+  DISMISSED
+}
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  ABANDONED
+  REVERSED
+}
+enum NotificationType {
+  LIKE_RECEIVED
+  MATCH_CREATED
+  MESSAGE_RECEIVED
+}
+
+model User {
+  id                 String                   @id @default(cuid())
+  email              String                   @unique
+  passwordHash       String
+  status             UserStatus               @default(PENDING_EMAIL)
+  emailVerifiedAt    DateTime?
+  verificationTokens EmailVerificationToken[]
+
+  profile            Profile?
+  creditTransactions CreditTransaction[]
+payments Payment[]
+notifications Notification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Profile {
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  displayName  String
+  dateOfBirth  DateTime  @db.Date
+  country      String
+  countryCode  String    @db.VarChar(2)
+  city         String?
+  bio          String?   @db.Text
+  interests    String[]  @default([])
+  messagesSent Message[] @relation("SentMessages")
+
+  gender             GenderIdentity?
+  showGender         Boolean            @default(false)
+  relationshipIntent RelationshipIntent @default(BOTH)
+
+  photos              ProfilePhoto[]
+  discoveryPreference DiscoveryPreference?
+notificationsSent Notification[] @relation("NotificationActor")
+
+  sentLikes     ProfileLike[] @relation("SentLikes")
+  receivedLikes ProfileLike[] @relation("ReceivedLikes")
+
+  matchesAsA Match[] @relation("MatchProfileA")
+  matchesAsB Match[] @relation("MatchProfileB")
+
+  blocksInitiated ProfileBlock[] @relation("BlockInitiator")
+  blocksReceived  ProfileBlock[] @relation("BlockTarget")
+
+  reportsMade     ProfileReport[] @relation("ReportAuthor")
+  reportsReceived ProfileReport[] @relation("ReportedProfile")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([countryCode])
+  @@index([relationshipIntent])
+}
+
+model DiscoveryPreference {
+  id        String @id @default(cuid())
+  profileId String @unique
+
+  minimumAge Int @default(18)
+  maximumAge Int @default(99)
+
+  preferredGenders GenderIdentity[] @default([])
+
+  // Empty means worldwide discovery.
+  preferredCountries String[] @default([])
+  excludedCountries  String[] @default([])
+
+  // Empty means no additional interest filter.
+  preferredInterests String[] @default([])
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([minimumAge, maximumAge])
+}
+
+model ProfileLike {
+  id            String     @id @default(cuid())
+  fromProfileId String
+  toProfileId   String
+  intent        LikeIntent
+
+  fromProfile Profile @relation("SentLikes", fields: [fromProfileId], references: [id], onDelete: Cascade)
+  toProfile   Profile @relation("ReceivedLikes", fields: [toProfileId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([fromProfileId, toProfileId])
+  @@index([toProfileId, createdAt])
+}
+
+model Match {
+  id           String        @id @default(cuid())
+  profileAId   String
+  profileBId   String
+  intent       LikeIntent
+  conversation Conversation?
+
+  profileA Profile @relation("MatchProfileA", fields: [profileAId], references: [id], onDelete: Cascade)
+  profileB Profile @relation("MatchProfileB", fields: [profileBId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  // Application code must store profile IDs in consistent sorted order.
+  @@unique([profileAId, profileBId])
+  @@index([profileAId, createdAt])
+  @@index([profileBId, createdAt])
+}
+
+model ProfileBlock {
+  id               String @id @default(cuid())
+  blockerProfileId String
+  blockedProfileId String
+
+  blocker Profile @relation("BlockInitiator", fields: [blockerProfileId], references: [id], onDelete: Cascade)
+  blocked Profile @relation("BlockTarget", fields: [blockedProfileId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([blockerProfileId, blockedProfileId])
+  @@index([blockedProfileId])
+}
+
+model ProfileReport {
+  id                String       @id @default(cuid())
+  reporterProfileId String
+  reportedProfileId String
+  reason            ReportReason
+  details           String?      @db.Text
+  status            ReportStatus @default(OPEN)
+
+  reporter Profile @relation("ReportAuthor", fields: [reporterProfileId], references: [id], onDelete: Cascade)
+  reported Profile @relation("ReportedProfile", fields: [reportedProfileId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([reportedProfileId, status])
+  @@index([reporterProfileId, createdAt])
+}
+
+model ProfilePhoto {
+  id         String          @id @default(cuid())
+  profileId  String
+  publicId   String          @unique
+  secureUrl  String          @db.Text
+  format     String
+  bytes      Int
+  width      Int
+  height     Int
+  isPrimary  Boolean         @default(false)
+  visibility PhotoVisibility @default(PUBLIC)
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([profileId])
+  @@index([profileId, isPrimary])
+}
+
+model CreditTransaction {
+  id             String                @id @default(cuid())
+  userId         String
+  type           CreditTransactionType
+  amount         Int
+  description    String?
+  reference      String?
+  idempotencyKey String?               @unique
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([type])
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+enum MessageStatus {
+  SENT
+  DELETED
+}
+
+model Conversation {
+  id      String @id @default(cuid())
+  matchId String @unique
+
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  messages Message[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([updatedAt])
+}
+
+model Message {
+  id              String        @id @default(cuid())
+  conversationId  String
+  senderProfileId String
+  content         String        @db.Text
+  status          MessageStatus @default(SENT)
+  idempotencyKey  String?       @unique
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  sender Profile @relation("SentMessages", fields: [senderProfileId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([senderProfileId, createdAt])
+}
+model Payment {
+  id                   String        @id @default(cuid())
+  userId               String
+  reference            String        @unique
+  amountKobo           Int
+  currency             String        @default("KES")
+  credits              Int            @default(20)
+  status               PaymentStatus  @default(PENDING)
+  gatewayTransactionId String?        @unique
+  channel              String?
+  paidAt               DateTime?
+  failureReason        String?
+  idempotencyKey       String?        @unique
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+model Notification {
+  id             String           @id @default(cuid())
+  userId         String
+  actorProfileId String?
+  type           NotificationType
+  title          String
+  body           String           @db.Text
+  entityId       String?
+  readAt         DateTime?
+  idempotencyKey String?          @unique
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+ actorProfile Profile? @relation("NotificationActor", fields: [actorProfileId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@index([userId, readAt, createdAt])
+  @@index([actorProfileId])
+  @@index([type, createdAt])
+}
