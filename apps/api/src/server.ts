@@ -26,6 +26,7 @@ async function startServer() {
   await app.register(cors, {
     origin: [
       'http://localhost:5173',
+      'https://zelvi-dating-platform.vercel.app',
     ],
     credentials: true,
   })
