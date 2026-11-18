@@ -14,9 +14,8 @@ export async function sendVerificationEmail(
   }
 
   const webUrl = (
-    process.env.WEB_URL || 'http://localhost:5173'
-  ).replace(/\/+$/, '')
-
+  process.env.WEB_URL || 'http://localhost:5173'
+).replace(/\/+$/, '')
   const verificationUrl =
     `${webUrl}/verify-email?token=${encodeURIComponent(token)}`
 
