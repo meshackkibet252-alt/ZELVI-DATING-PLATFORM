@@ -23,31 +23,42 @@ const app = Fastify({
 })
 
 async function startServer() {
+  // CORS configuration
   await app.register(cors, {
     origin: [
       'http://localhost:5173',
       'https://zelvi-dating-platform.vercel.app',
+      'https://zelvi.name.ng',
+      'https://www.zelvi.name.ng',
     ],
     credentials: true,
+    methods: [
+      'GET',
+      'POST',
+      'PUT',
+      'PATCH',
+      'DELETE',
+      'OPTIONS',
+    ],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-CSRF-Token',
+    ],
   })
 
+  // Rate limiting
   await app.register(rateLimit, {
     max: 100,
     timeWindow: '1 minute',
   })
 
+  // JWT configuration
   const jwtSecret = process.env.JWT_SECRET
 
   if (!jwtSecret || jwtSecret.length < 40) {
     throw new Error('JWT_SECRET is missing or too short')
   }
-
-  await app.register(multipart, {
-    limits: {
-      files: 1,
-      fileSize: 5 * 1024 * 1024,
-    },
-  })
 
   await app.register(jwt, {
     secret: jwtSecret,
@@ -56,7 +67,15 @@ async function startServer() {
     },
   })
 
-  // Register API routes.
+  // File upload configuration
+  await app.register(multipart, {
+    limits: {
+      files: 1,
+      fileSize: 5 * 1024 * 1024,
+    },
+  })
+
+  // Register API routes
   await registerRoutes(app)
   await registerVerificationRoutes(app)
   await registerProfileRoutes(app)
@@ -68,9 +87,10 @@ async function startServer() {
   await registerWalletRoutes(app)
   await registerNotificationRoutes(app)
 
-  // Attach authenticated real-time messaging.
+  // Real-time messaging
   configureSocket(app)
 
+  // Root endpoint
   app.get('/', async () => {
     return {
       name: 'ZELVI API',
@@ -79,6 +99,7 @@ async function startServer() {
     }
   })
 
+  // API health check
   app.get('/api/health', async () => {
     return {
       status: 'ok',
@@ -87,6 +108,7 @@ async function startServer() {
     }
   })
 
+  // Database health check
   app.get('/api/health/db', async (request, reply) => {
     try {
       await prisma.$queryRaw`SELECT 1`
@@ -106,16 +128,18 @@ async function startServer() {
     }
   })
 
+  // Database cleanup
   app.addHook('onClose', async () => {
     await prisma.$disconnect()
   })
 
+  // Server startup
   const port = Number(process.env.PORT) || 4000
   const host = process.env.HOST || '0.0.0.0'
 
   try {
     await app.listen({ port, host })
-    console.log(`ZELVI API running at http://localhost:${port}`)
+    app.log.info(`ZELVI API listening on ${host}:${port}`)
   } catch (error) {
     app.log.error(error)
     process.exit(1)
